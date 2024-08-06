@@ -44,9 +44,7 @@ const AddQuestionary = () => {
     <div>
       <Card className="w-[300px]  h-28">
         <CardHeader>
-          <CardTitle className=" text-xs text-gray-500">
-            Create project
-          </CardTitle>
+          <CardTitle className=" text-xs text-gray-500">Add Question</CardTitle>
         </CardHeader>
         <CardContent className=" p-0 m-0 bg-white z-20">
           <Collapsible

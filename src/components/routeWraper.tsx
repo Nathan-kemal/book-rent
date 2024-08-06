@@ -4,6 +4,8 @@ import React from "react";
 import SideBar from "./sidebar";
 import Navbar from "./navbar";
 import { SessionProvider } from "next-auth/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+const queryClient = new QueryClient();
 const RouteWrapper = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
@@ -12,16 +14,18 @@ const RouteWrapper = ({ children }: { children: React.ReactNode }) => {
   }
   return (
     <SessionProvider>
-      <div className="flex flex-row bg-[#F0F2FF]">
-        <SideBar />
+      <QueryClientProvider client={queryClient}>
+        <div className="flex flex-row bg-[#F0F2FF]">
+          <SideBar />
 
-        <div className="w-full">
-          <div className="p-6">
-            <Navbar />
+          <div className="w-full">
+            <div className="p-6">
+              <Navbar />
+            </div>
+            {children}
           </div>
-          {children}
         </div>
-      </div>
+      </QueryClientProvider>
     </SessionProvider>
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 import AddQuestionary from "@/components/ui/addquestion";
-import { ComboboxDemo } from "@/components/ui/combobox";
+import { SelectBook } from "@/components/ui/searchbook";
 import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { MdOutlineFileUpload } from "react-icons/md";
@@ -21,15 +21,25 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { CldUploadButton, CldUploadWidget } from "next-cloudinary";
+import { uploadImage } from "@/app/actions/db";
 
 const formSchema = z.object({
-  quantity: z.number().min(1, {
-    message: "Qunatity Must Be Greater than 0.",
-  }),
+  quantity: z.preprocess(
+    (value) => (typeof value === "string" ? parseFloat(value) : value),
+    z.number().min(1, {
+      message: "Quantity Must Be Greater than 0.",
+    })
+  ),
 
-  price: z.number().min(1, {
-    message: "price Must Be Greater than 0.",
-  }),
+  price: z.preprocess(
+    (value) => (typeof value === "string" ? parseFloat(value) : value),
+    z.number().min(1, {
+      message: "Price Must Be Greater than 0.",
+    })
+  ),
+
+  image: z.instanceof(FileList).optional(),
 });
 
 const BookUpload = () => {
@@ -41,8 +51,12 @@ const BookUpload = () => {
     defaultValues: {},
   });
 
+  const fileRef = form.register("image");
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
+
+    console.log("files", files[0]);
     if (files && files[0]) {
       const file = files[0];
       const reader = new FileReader();
@@ -63,10 +77,17 @@ const BookUpload = () => {
     setSelectedImage(null);
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log(values);
+    const formData = new FormData();
+    Array.from(values.image).forEach((file, index) => {
+      formData.append(`images`, file); // Use the same key for multiple files
+    });
+
+    console.log(formData.get("images"));
+    const response = await uploadImage(formData);
+    console.log(response);
   }
 
   const { toast } = useToast();
@@ -75,19 +96,65 @@ const BookUpload = () => {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className=" w-full flex flex-col justify-center items-center ">
           <h1 className=" m-4"> Upload New Book</h1>
-          <div className="flex gap-4 z-20">
-            <ComboboxDemo />
-            <AddQuestionary />
+          <div className="flex gap-2  flex-col justify-center items-center">
+            <SelectBook />
+            {/* <AddQuestionary /> */}
+
+            <div className="flex gap-2">
+              <FormField
+                control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                  <FormItem className="">
+                    <FormControl className="">
+                      <Input
+                        type="number"
+                        className=""
+                        placeholder="Book Quantity"
+                        {...field}
+                      />
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem className="">
+                    <FormControl className="">
+                      <Input
+                        type="number"
+                        className=""
+                        placeholder="Rent Price for 2 week"
+                        {...field}
+                      />
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <div className="grid w-full max-w-sm items-center gap-1.5 mt-4  z-0">
             <div>
-              <Input
-                required
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                style={{ display: "none" }} // Hide the actual input
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem className="">
+                    <FormControl className="">
+                      <Input type="file" className="" {...fileRef} />
+                    </FormControl>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
 
               <div className=" border-2 border-dashed border-[#ccc] p-[20px]  text-center cursor-pointer flex justify-center items-center gap-2 ">
@@ -113,18 +180,20 @@ const BookUpload = () => {
                   <p className="text-[#00ABFF]"> Upload Book Cover</p>
                 </div>
               </div>
+
+              {/* <CldUploadWidget uploadPreset="book_rent" options={{}}>
+                {({ open }) => {
+                  return (
+                    <button onClick={() => open()}>Upload an Image</button>
+                  );
+                }}
+              </CldUploadWidget> */}
+
+              {/* <CldUploadButton uploadPreset="book_rent" /> */}
             </div>
           </div>
 
-          <Button
-            className="bg-[#00ABFF] mt-4  w-96"
-            onClick={() => {
-              toast({
-                title: "Message",
-                description: "Submited Successfuly",
-              });
-            }}
-          >
+          <Button type="submit" className="bg-[#00ABFF] mt-4  w-96">
             Submit
           </Button>
         </div>

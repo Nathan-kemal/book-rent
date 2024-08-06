@@ -34,6 +34,7 @@ export default function RootLayout({
         )}
       >
         <Toaster />
+
         <RouteWrapper children={children} />
       </body>
     </html>

@@ -14,7 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -33,78 +33,55 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { data2 } from "@/lib/data2";
 
 import { FaCheck } from "react-icons/fa6";
-import { BsEye, BsFillPencilFill, BsTrash } from "react-icons/bs";
-const data: BookTableType[] = [...data2];
+import { BsEye, BsTrash } from "react-icons/bs";
+import getOwners from "@/app/actions/db";
 
-export type BookTableType = {
-  no: number;
-  Author: string;
-  Owner: string;
-  status: string;
-  bookName: string;
-  category: string;
-};
+import { useQuery } from "@tanstack/react-query";
+import { User } from "@prisma/client";
 
-export const columns: ColumnDef<BookTableType>[] = [
-  //   {
-  //     id: "select",
-  //     header: ({ table }) => (
-  //       <Checkbox
-  //         checked={
-  //           table.getIsAllPageRowsSelected() ||
-  //           (table.getIsSomePageRowsSelected() && "indeterminate")
-  //         }
-  //         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-  //         aria-label="Select all"
-  //       />
-  //     ),
-  //     cell: ({ row }) => (
-  //       <Checkbox
-  //         checked={row.getIsSelected()}
-  //         onCheckedChange={(value) => row.toggleSelected(!!value)}
-  //         aria-label="Select row"
-  //       />
-  //     ),
-  //     enableSorting: false,
-  //     enableHiding: false,
-  //   },
+export const columns: ColumnDef<User>[] = [
   {
-    accessorKey: "no",
+    accessorKey: "id",
     header: "No",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("no")}</div>,
-  },
-  {
-    accessorKey: "Author",
-    header: "Author Name",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("Author")}</div>
-    ),
+    cell: ({ row }) => <div className="capitalize">{row.index + 1}</div>,
   },
 
   {
-    accessorKey: "Owner",
+    accessorKey: "firstName",
     header: "Owner",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("Owner")}</div>
+      <div className="capitalize">
+        {row.original.firstName} {row.original.lastName}
+      </div>
     ),
   },
 
   {
-    accessorKey: "category",
-    header: "Category",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("category")}</div>
-    ),
+    accessorKey: "Upload",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Uploads
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const books = row.original?.books as [];
+      return <div className="capitalize">{books.length}</div>;
+    },
   },
 
   {
-    accessorKey: "bookName",
-    header: "Book Name",
+    accessorKey: "location",
+    header: "Location",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("bookName")}</div>
+      <div className="capitalize">{row.getValue("location")}</div>
     ),
   },
   {
@@ -146,8 +123,8 @@ export const columns: ColumnDef<BookTableType>[] = [
   },
 
   {
-    accessorKey: "actions",
-    header: () => <div className="text-left">Action</div>,
+    accessorKey: "actionbutton",
+    header: () => <div className="text-left"></div>,
     cell: ({ row }) => {
       return (
         <div className="flex gap-4">
@@ -156,35 +133,30 @@ export const columns: ColumnDef<BookTableType>[] = [
       );
     },
   },
-
-  //   {
-  //     accessorKey: "email",
-  //     header: ({ column }) => {
-  //       return (
-  //         <Button
-  //           variant="ghost"
-  //           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-  //         >
-  //           Email
-  //           <ArrowUpDown className="ml-2 h-4 w-4" />
-  //         </Button>
-  //       );
-  //     },
-  //     cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
-  //   },
 ];
 
+async function fetchData() {
+  const response = await getOwners();
+  const data = await response?.users;
+  return data || [];
+}
 export function OwnerTable() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
+  const { data } = useQuery<User[]>({
+    queryKey: ["owners"],
+    queryFn: fetchData,
+  });
+
   const table = useReactTable({
-    data,
+    data: data || [],
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -206,12 +178,12 @@ export function OwnerTable() {
     <div className="w-full h-full">
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter Book..."
+          placeholder="Filter Owner..."
           value={
-            (table.getColumn("bookName")?.getFilterValue() as string) ?? ""
+            (table.getColumn("firstName")?.getFilterValue() as string) ?? ""
           }
           onChange={(event) =>
-            table.getColumn("bookName")?.setFilterValue(event.target.value)
+            table.getColumn("firstName")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />

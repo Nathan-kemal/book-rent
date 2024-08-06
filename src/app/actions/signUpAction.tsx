@@ -1,7 +1,6 @@
 "use server";
 
 import prisma from "@/lib/db";
-import { redirect } from "next/navigation";
 
 type User = {
   firstname: string;

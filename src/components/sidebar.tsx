@@ -25,7 +25,7 @@ const SideBar = () => {
   const session = useSession();
   const [role, setRole] = useState();
   const [isAdmin, setIsAdmin] = useState(false);
-  // console.log("sidebar", session);
+
   useEffect(() => {
     setRole(session.data?.user?.role);
 
@@ -33,12 +33,6 @@ const SideBar = () => {
       setIsAdmin(true);
     }
   }, [session.data?.user?.role]);
-
-  // const handleSignOut = async () => {
-  //   const signout = await signOut();
-
-  //   console.log(signout);
-  // };
 
   const SideButton = ({ title, link, children }: SideButtonProps) => {
     return (
