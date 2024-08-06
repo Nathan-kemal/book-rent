@@ -1,0 +1,81 @@
+import prisma from "@/lib/db";
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs"; // Ensure you have bcryptjs installed
+
+export const authOptions = {
+  // Configure one or more authentication providers
+  providers: [
+    CredentialsProvider({
+      // The name to display on the sign-in form (e.g. "Sign in with...")
+      name: "Credentials",
+
+      credentials: {
+        email: {
+          label: "Email",
+          type: "text",
+          placeholder: "jsmith@example.com",
+        },
+        password: { label: "Password", type: "password" },
+      },
+
+      async authorize(credentials, req) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null;
+          }
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+          });
+
+          if (!user) {
+            return null;
+          }
+
+          const checkPassword = user.password == credentials.password;
+
+          if (!checkPassword) {
+            return null;
+          }
+
+          return {
+            id: user.id,
+            name: `${user.firstName} ${user.lastName}`,
+            email: user.email,
+            role: user.role,
+          };
+        } catch (error) {
+          console.error("Error during authorization:", error);
+          return null;
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    // Add user role to the session
+    async session({ session, token }) {
+      session.user.role = token.role;
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
+
+    redirect({ url, baseUrl }) {
+      // Redirect to '/' after successful sign-in
+      return baseUrl;
+    },
+  },
+
+  pages: {
+    signIn: "/auth/sign-in",
+  },
+};
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
